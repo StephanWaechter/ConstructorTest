@@ -20,43 +20,38 @@ std::thread print_delete(std::unique_ptr<Base> base, std::chrono::duration<doubl
 	std::thread task(
 		[b = std::move(base), time]() mutable
 		{
+			std::this_thread::sleep_for(0.5s - time);
 			print("thread", *b);
-			std::this_thread::sleep_for(1s + time);
+			std::this_thread::sleep_for(1.0s + time);
 		}
 		);
 	return task;
-
 }
 
 int main()
 {
-	std::vector<
-		std::pair<
-			std::unique_ptr<Base>,
-			std::chrono::duration<double>
-		>
-	> objects;
-
-	objects.push_back({ std::make_unique<Base>("1"), 300ms });
-	objects.push_back({ std::make_unique<ClassA>("2"), 200ms });
-	objects.push_back({ std::make_unique<ClassB>("3"), 100ms });
-
+	std::chrono::duration<double> time = 0ms;
 	std::vector<std::thread> tasks;
-	while (objects.size())
 	{
-		auto [obj, time] = std::move(objects.back());
-		objects.pop_back();
-		tasks.push_back(
-			print_delete(std::move(obj), time)
-		);
+		std::vector<std::unique_ptr<Base>> objects;
+		objects.push_back(std::make_unique<Base>("1"));
+		objects.push_back(std::make_unique<ClassA>("2"));
+		objects.push_back(std::make_unique<ClassB>("3"));
+
+
+		for (auto& obj : objects)
+		{
+			tasks.push_back(
+				print_delete(std::move(obj), time)
+			);
+			time += 100ms;
+		}
 	}
 
-	std::for_each(tasks.begin(), tasks.end(),
-		[](auto& task)
-		{
-			task.join();
-		}
-	);
+	for (auto& task : tasks)
+	{
+		task.join();
+	}
 	return 0;
 }
 
